@@ -11,6 +11,15 @@
     *learn more about zig 
 ---
 ### Aniketh's progress
+* **This week:**
+  * Reading about language construction, lexical grammar, and feature implementation (Crafting Interpreters, Lox, and Monkey language).
+  * Learning Zig syntax, understanding its use cases, and completing the environment setup.
+  * Prototyping a sample toy language.
+  * Collaborating with teammates on the EBNF grammar document and language definition.
+  * Preparing project presentation slides and participating in dry runs and team alignment calls.
+* **Next week :**
+  * Getting hands-on with Zig.
+  * Implementation of the lexer.
 ---
 ### Arnav's progress
 ---
