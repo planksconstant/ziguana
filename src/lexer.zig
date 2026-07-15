@@ -1,3 +1,9 @@
+pub const TypeKind = enum {
+    int,
+    Bool, //B is in Upper-case
+    string,
+};
+
 pub const TokenTag = enum {
     eof,
     lparen,
@@ -66,7 +72,7 @@ pub const TokenPayload = union(TokenTag) {
     greaterthan: void,
     greaterthan_equal: void, // >=
     return_: void,
-    type_: []const u8, //this can be inefficient we could have an integer which acts as flag like 1=int 2=string 3=bool .... etc
+    type_: TypeKind,
     string: []const u8,
     identifier: []const u8,
     number: i64,
