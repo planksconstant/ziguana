@@ -1,0 +1,12 @@
+*.exe
+*.dll
+*.app
+*.dmg
+*.dylib
+*.so
+.DS_Store
+src/test.txt
+src/hi.txt
+.zig-cache
+zig-out
+build.zig.zon
