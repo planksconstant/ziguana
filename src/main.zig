@@ -10,8 +10,9 @@ pub fn main(init: std.process.Init) !void {
     const source = try fetcher.readSource(io, init.gpa, path);
     defer init.gpa.free(source);
 
-    var lexer = lexerMod.Lexer.create(source);
+    var lexer = lexerMod.Lexer.init(source);
 
-    var tokens = try lexerMod.lex(&lexer, init.gpa);
+    var tokens = try lexerMod.Lexer.lex(&lexer, init.gpa);
     defer tokens.deinit(init.gpa);
 }
+ 

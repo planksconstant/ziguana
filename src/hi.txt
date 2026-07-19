@@ -1,0 +1,12 @@
+fn void main() {
+    int counter = 0;
+
+    while (counter < 5) {
+        if (counter % 2 == 0) {
+            print("{counter}: Even");
+        } else {
+            print("{counter}: Odd");
+        }
+        counter += 1;
+    }
+}
