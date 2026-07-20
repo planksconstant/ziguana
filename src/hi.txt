@@ -9,4 +9,8 @@ fn void main() {
         }
         counter += 1;
     }
+    `
+    `
+    `
+    print(");
 }

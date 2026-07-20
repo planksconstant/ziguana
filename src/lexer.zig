@@ -46,6 +46,8 @@ pub const TokenTag = enum {
     semicolon,
     true_,
     false_,
+    void_,
+    invalid, // for collecting errors
 };
 
 pub const TokenPayload = union(TokenTag) {
@@ -87,6 +89,8 @@ pub const TokenPayload = union(TokenTag) {
     semicolon: void,
     true_: void,
     false_: void,
+    invalid: []const u8,
+    void_: void,
 };
 
 pub const Token = struct {
@@ -152,7 +156,7 @@ pub const Lexer = struct {
         const number_slice: []const u8 = self.input[start..self.position];
         return std.fmt.parseInt(i64, number_slice, 10) catch 0;
     }
-    pub fn readString(self: *Lexer) []const u8 {
+    pub fn readString(self: *Lexer) ?[]const u8 {
         self.readChar(); // ignoring the opening quote
         const start: usize = self.position;
         while (self.ch != '"' and self.ch != 0) {
@@ -164,8 +168,9 @@ pub const Lexer = struct {
         }
         if (self.ch == 0) {
             // ** should work on this
-            return self.input[start..self.position];
+            // return self.input[start..self.position];
             //error - did not put closing quote for the string
+            return null;
         }
         const string_slice: []const u8 = self.input[start..self.position];
         self.readChar(); // ignoring the closing quote
@@ -178,26 +183,25 @@ pub const Lexer = struct {
         }
         return self.input[start..self.position];
     }
-    pub fn lookUpKeyword(word: []const u8) TokenPayload 
-    {
-        const keywords = 
-        .{
-            .{ "fn", TokenPayload{ .func = {} } },
-            .{ "int", TokenPayload{ .type_ = .Int } },
-            .{ "bool", TokenPayload{ .type_ = .Bool } },
-            .{ "string", TokenPayload{ .type_ = .String } },
-            .{ "if", TokenPayload{ .if_ = {} } },
-            .{ "else", TokenPayload{ .else_ = {} } },
-            .{ "while", TokenPayload{ .while_ = {} } },
-            .{ "return", TokenPayload{ .return_ = {} } },
-            .{ "true", TokenPayload{ .true_ = {} } },
-            .{ "false", TokenPayload{ .false_ = {} } },
-        };
+    pub fn lookUpKeyword(word: []const u8) TokenPayload {
+        const keywords =
+            .{
+                .{ "fn", TokenPayload{ .func = {} } },
+                .{ "int", TokenPayload{ .type_ = .Int } },
+                .{ "bool", TokenPayload{ .type_ = .Bool } },
+                .{ "string", TokenPayload{ .type_ = .String } },
+                .{ "if", TokenPayload{ .if_ = {} } },
+                .{ "void", TokenPayload{ .void_ = {} } },
+                .{ "else", TokenPayload{ .else_ = {} } },
+                .{ "while", TokenPayload{ .while_ = {} } },
+                .{ "return", TokenPayload{ .return_ = {} } },
+                .{ "true", TokenPayload{ .true_ = {} } },
+                .{ "false", TokenPayload{ .false_ = {} } },
+            };
 
         const map = std.StaticStringMap(TokenPayload).initComptime(keywords);
 
-        if (map.get(word)) |payload| 
-        {
+        if (map.get(word)) |payload| {
             return payload;
         }
         return .{ .identifier = word };
@@ -216,41 +220,40 @@ pub const Lexer = struct {
         const start_col: usize = self.column;
 
         // Symbols -
-        switch (self.ch)
-        {
-            '(' =>{
+        switch (self.ch) {
+            '(' => {
                 self.readChar();
                 return Token{ .payload = .{ .lparen = {} }, .line = start_line, .column = start_col };
             },
-            ')' =>{
+            ')' => {
                 self.readChar();
                 return Token{ .payload = .{ .rparen = {} }, .line = start_line, .column = start_col };
             },
-            '{' =>{
+            '{' => {
                 self.readChar();
                 return Token{ .payload = .{ .lbrace = {} }, .line = start_line, .column = start_col };
             },
-            '}' =>{
+            '}' => {
                 self.readChar();
                 return Token{ .payload = .{ .rbrace = {} }, .line = start_line, .column = start_col };
             },
-            '[' =>{
+            '[' => {
                 self.readChar();
                 return Token{ .payload = .{ .lbracket = {} }, .line = start_line, .column = start_col };
             },
-            ']' =>{
+            ']' => {
                 self.readChar();
                 return Token{ .payload = .{ .rbracket = {} }, .line = start_line, .column = start_col };
             },
-            ',' =>{
+            ',' => {
                 self.readChar();
                 return Token{ .payload = .{ .comma = {} }, .line = start_line, .column = start_col };
             },
-            ';' =>{
+            ';' => {
                 self.readChar();
                 return Token{ .payload = .{ .semicolon = {} }, .line = start_line, .column = start_col };
             },
-            ':' =>{
+            ':' => {
                 self.readChar();
                 return Token{ .payload = .{ .colon = {} }, .line = start_line, .column = start_col };
             },
@@ -338,8 +341,10 @@ pub const Lexer = struct {
 
         // Identifiers, Numbers etc -
         if (self.ch == '"') {
-            const stringValue: []const u8 = self.readString();
-            return Token{ .payload = .{ .string = stringValue }, .line = start_line, .column = start_col };
+            if (self.readString()) |stringValue| {
+                return Token{ .payload = .{ .string = stringValue }, .line = start_line, .column = start_col };
+            }
+            return Token{ .payload = .{ .invalid = "unterminated string literal" }, .line = start_line, .column = start_col }; //return the incomplete string token
         }
         if (std.ascii.isDigit(self.ch)) {
             const numberValue: i64 = self.readNumber();
@@ -353,8 +358,9 @@ pub const Lexer = struct {
         if (self.ch == 0) {
             return Token{ .payload = .{ .eof = {} }, .line = start_line, .column = start_col };
         }
+        const bad_char = self.input[self.position .. self.position + 1]; // slice bad btye from the input
         self.readChar();
-        return self.nextToken();
+        return Token{ .payload = .{ .invalid = bad_char }, .line = start_line, .column = start_col }; //return the bad token
     }
 
     pub fn lex(self: *Lexer, allocator: std.mem.Allocator) !std.ArrayList(Token) {
@@ -364,6 +370,12 @@ pub const Lexer = struct {
             try tokens.append(allocator, tok);
             if (tok.payload == .eof) break;
         }
+        // printing the lexer errors
+        for (tokens.items) |tok| {
+            if (tok.payload == .invalid) {
+                std.debug.print("Lexer Errors at {d}:{d}: {s}\n", .{ tok.line, tok.column, tok.payload.invalid });
+            }
+        }
         return tokens;
     }
-}; // closes `pub const Lexer = struct { ... }` — everything above from `input:` down is now part of Lexer
+};
