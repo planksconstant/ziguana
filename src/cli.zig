@@ -8,6 +8,7 @@ const Arguments = struct {
     ask_help: bool = false,
     ask_version: bool = false,
     c_file: bool = false,
+    print_checks: bool = false,
 };
 pub fn parseArgs(init: std.process.Init) !Arguments {
     const args = try init.minimal.args.toSlice(init.arena.allocator());
@@ -30,6 +31,8 @@ pub fn parseArgs(init: std.process.Init) !Arguments {
         } else if (!pathSet) {
             arguments.path = arg;
             pathSet = true;
+        } else if (std.mem.eql(u8, arg, "--check")) { //cn be changed later
+            arguments.print_checks = true;
         }
     }
     if (!pathSet and !arguments.ask_help and !arguments.ask_version) {

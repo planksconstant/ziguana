@@ -277,6 +277,7 @@ pub const Printer = struct {
             .Int => "Int",
             .Bool => "Bool",
             .String => "String", //todo: need to add an invalid type after tanishk's pr gets merged
+            .void_ => "void",
         };
     }
 };

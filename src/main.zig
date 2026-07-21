@@ -27,4 +27,16 @@ pub fn main(init: std.process.Init) !void {
         var printer = astprinter.Printer.init();
         try printer.printAst(program);
     }
+    var checker = @import("checker.zig").Checker.init(arena);
+    try checker.check(program);
+    if (args.print_checks) {
+        if (checker.errors.items.len > 0) {
+            for (checker.errors.items) |err| {
+                std.debug.print("error: {s}\n", .{err.message});
+            }
+            return error.TypeCheckFailed;
+        } else {
+            std.debug.print("No Errors \n", .{});
+        }
+    }
 }
