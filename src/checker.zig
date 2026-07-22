@@ -7,6 +7,10 @@ const Expr = ast.Expr;
 const TypeKind = lexer.TypeKind;
 const TokenTag = lexer.TokenTag;
 
+const test1 = error{
+    TypeCheckFailed,
+} || std.mem.Allocator.Error;
+
 pub const CheckErr = struct {
     message: []const u8,
 };

@@ -34,7 +34,8 @@ pub fn main(init: std.process.Init) !void {
             for (checker.errors.items) |err| {
                 std.debug.print("error: {s}\n", .{err.message});
             }
-            return error.TypeCheckFailed;
+            //return error.TypeCheckFailed;
+            std.process.exit(1);
         } else {
             std.debug.print("No Errors \n", .{});
         }
