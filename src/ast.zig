@@ -8,29 +8,50 @@ pub const Literal = union(enum) {
     boolean: bool,
 };
 
-pub const Expr = union(enum) {
-    variable: []const u8,
+pub const UnaryExpr = struct {
+    op: TokenTag,
+    operand: *Expr,
 
+    line: usize,
+    column: usize,
+};
+
+pub const Expr = union(enum) {
+    variable: struct {
+        name: []const u8,
+
+        line: usize,
+        column: usize,
+    },
     binary: struct {
         op: TokenTag, //operator
         left: *Expr,
         right: *Expr,
+
+        line: usize,
+        column: usize,
     },
     call: struct {
         callee: []const u8,
         args: []*Expr,
+
+        line: usize,
+        column: usize,
     },
     index: struct {
         array: []const u8,
         subscript: *Expr,
-    },
-    literal: Literal,
-    unary: UnaryExpr,
-};
 
-pub const UnaryExpr = struct {
-    op: TokenTag,
-    operand: *Expr,
+        line: usize,
+        column: usize,
+    },
+    literal: struct {
+        value: Literal,
+
+        line: usize,
+        column: usize,
+    },
+    unary: UnaryExpr,
 };
 
 pub const VarInit = union(enum) {
@@ -41,6 +62,9 @@ pub const VarInit = union(enum) {
 pub const Param = struct {
     ty: TypeKind,
     name: []const u8,
+
+    line: usize,
+    column: usize,
 };
 
 pub const Stmt = union(enum) {
@@ -49,6 +73,9 @@ pub const Stmt = union(enum) {
         array_size: ?usize,
         name: []const u8,
         init: ?VarInit,
+
+        line: usize,
+        column: usize,
     },
 
     assignment: struct {
@@ -56,6 +83,9 @@ pub const Stmt = union(enum) {
         index: ?*Expr,
         op: TokenTag,
         value: *Expr,
+
+        line: usize,
+        column: usize,
     },
 
     func_decl: struct {
@@ -63,64 +93,79 @@ pub const Stmt = union(enum) {
         name: []const u8,
         params: []Param,
         body: *Stmt,
+
+        line: usize,
+        column: usize,
     },
 
     if_stmt: struct {
         condition: *Expr,
         then_branch: *Stmt,
         else_branch: ?*Stmt,
+
+        line: usize,
+        column: usize,
     },
 
     while_stmt: struct {
         condition: *Expr,
         body: *Stmt,
+
+        line: usize,
+        column: usize,
     },
 
-    return_stmt: ?*Expr,
+    return_stmt: struct {
+        value: ?*Expr,
+
+        line: usize,
+        column: usize,
+    },
+
     block: []*Stmt,
     expr_stmt: *Expr,
     program: []*Stmt,
 };
 
-pub fn makeLiteral(a: std.mem.Allocator, lit: Literal) !*Expr {
+pub fn makeLiteral(a: std.mem.Allocator, lit: Literal, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .literal = lit };
+    node.* = .{ .literal = .{ .value = lit, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeVariable(a: std.mem.Allocator, name: []const u8) !*Expr {
+pub fn makeVariable(a: std.mem.Allocator, name: []const u8, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .variable = name };
+    node.* = .{ .variable = .{ .name = name, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeBinary(a: std.mem.Allocator, op: TokenTag, left: *Expr, right: *Expr) !*Expr {
+pub fn makeBinary(a: std.mem.Allocator, op: TokenTag, left: *Expr, right: *Expr, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .binary = .{ .op = op, .left = left, .right = right } };
+    node.* = .{ .binary = .{ .op = op, .left = left, .right = right, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeCall(a: std.mem.Allocator, callee: []const u8, args: []*Expr) !*Expr {
+pub fn makeCall(a: std.mem.Allocator, callee: []const u8, args: []*Expr, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .call = .{ .callee = callee, .args = args } };
+    node.* = .{ .call = .{ .callee = callee, .args = args, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeIndex(a: std.mem.Allocator, array: []const u8, subscript: *Expr) !*Expr {
+pub fn makeIndex(a: std.mem.Allocator, array: []const u8, subscript: *Expr, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .index = .{ .array = array, .subscript = subscript } };
+    node.* = .{ .index = .{ .array = array, .subscript = subscript, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeIfStmt(a: std.mem.Allocator, condition: *Expr, then_branch: *Stmt, else_branch: ?*Stmt) !*Stmt {
+pub fn makeIfStmt(a: std.mem.Allocator, condition: *Expr, then_branch: *Stmt, else_branch: ?*Stmt, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .if_stmt = .{ .condition = condition, .then_branch = then_branch, .else_branch = else_branch } };
+    node.* = .{ .if_stmt = .{ .condition = condition, .then_branch = then_branch, .else_branch = else_branch, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeWhileStmt(a: std.mem.Allocator, condition: *Expr, body: *Stmt) !*Stmt {
+pub fn makeWhileStmt(a: std.mem.Allocator, condition: *Expr, body: *Stmt, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .while_stmt = .{ .condition = condition, .body = body } };
+    node.* = .{ .while_stmt = .{ .condition = condition, .body = body, .line = line, .column = column } };
     return node;
 }
 
@@ -130,27 +175,27 @@ pub fn makeBlock(a: std.mem.Allocator, stmts: []*Stmt) !*Stmt {
     return node;
 }
 
-pub fn makeVarDecl(a: std.mem.Allocator, ty: TypeKind, array_size: ?usize, name: []const u8, init: ?VarInit) !*Stmt {
+pub fn makeVarDecl(a: std.mem.Allocator, ty: TypeKind, array_size: ?usize, name: []const u8, init: ?VarInit, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .var_decl = .{ .ty = ty, .array_size = array_size, .name = name, .init = init } };
+    node.* = .{ .var_decl = .{ .ty = ty, .array_size = array_size, .name = name, .init = init, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeAssignment(a: std.mem.Allocator, name: []const u8, index: ?*Expr, op: TokenTag, value: *Expr) !*Stmt {
+pub fn makeAssignment(a: std.mem.Allocator, name: []const u8, index: ?*Expr, op: TokenTag, value: *Expr, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .assignment = .{ .name = name, .index = index, .op = op, .value = value } };
+    node.* = .{ .assignment = .{ .name = name, .index = index, .op = op, .value = value, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeFuncDecl(a: std.mem.Allocator, return_type: TypeKind, name: []const u8, params: []Param, body: *Stmt) !*Stmt {
+pub fn makeFuncDecl(a: std.mem.Allocator, return_type: TypeKind, name: []const u8, params: []Param, body: *Stmt, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .func_decl = .{ .return_type = return_type, .name = name, .params = params, .body = body } };
+    node.* = .{ .func_decl = .{ .return_type = return_type, .name = name, .params = params, .body = body, .line = line, .column = column } };
     return node;
 }
 
-pub fn makeReturnStmt(a: std.mem.Allocator, value: ?*Expr) !*Stmt {
+pub fn makeReturnStmt(a: std.mem.Allocator, value: ?*Expr, line: usize, column: usize) !*Stmt {
     const node = try a.create(Stmt);
-    node.* = .{ .return_stmt = value };
+    node.* = .{ .return_stmt = .{ .value = value, .line = line, .column = column } };
     return node;
 }
 
@@ -165,8 +210,8 @@ pub fn makeProgram(a: std.mem.Allocator, stmts: []*Stmt) !*Stmt {
     node.* = .{ .program = stmts };
     return node;
 }
-pub fn makeUnary(a: std.mem.Allocator, op: TokenTag, operand: *Expr) !*Expr {
+pub fn makeUnary(a: std.mem.Allocator, op: TokenTag, operand: *Expr, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
-    node.* = .{ .unary = .{ .op = op, .operand = operand } };
+    node.* = .{ .unary = .{ .op = op, .operand = operand, .line = line, .column = column } };
     return node;
 }

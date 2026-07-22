@@ -142,11 +142,11 @@ pub const Printer = struct {
                 self.removeLevel();
             },
 
-            .return_stmt => |value| {
+            .return_stmt => |ret| {
                 try self.printIndent();
                 try self.printPrefix();
                 std.debug.print("Return\n", .{});
-                if (value) |expr| {
+                if (ret.value) |expr| {
                     self.addLevel();
                     try self.printExpression(expr);
                     self.removeLevel();
@@ -165,16 +165,16 @@ pub const Printer = struct {
 
     fn printExpression(self: *Printer, expr: *const ast.Expr) !void {
         switch (expr.*) {
-            .variable => |name| {
+            .variable => |v| {
                 try self.printIndent();
                 try self.printPrefix();
-                std.debug.print("Variable {s}\n", .{name});
+                std.debug.print("Variable {s}\n", .{v.name});
             },
 
-            .literal => |literal| {
+            .literal => |lit| {
                 try self.printIndent();
                 try self.printPrefix();
-                switch (literal) {
+                switch (lit.value) {
                     .number => |num| {
                         std.debug.print("Literal {d}\n", .{num});
                     },

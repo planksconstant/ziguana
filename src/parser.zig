@@ -101,7 +101,7 @@ pub const Parser = struct {
         );
     }
     fn parseFunction(self: *Self) ParserErrors!*Stmt {
-        _ = try self.consume(.func);
+        const funcTok = try self.consume(.func);
 
         const typeToken = try self.consume(.type_);
         const return_type = typeToken.payload.type_;
@@ -131,6 +131,8 @@ pub const Parser = struct {
             name,
             try params.toOwnedSlice(self.allocator),
             body,
+            funcTok.line,
+            funcTok.column,
         );
     }
     fn parseBlock(self: *Self) ParserErrors!*Stmt {
@@ -171,33 +173,28 @@ pub const Parser = struct {
         }
         const ident = identToken.payload.identifier;
 
-        return .{
-            .ty = ty,
-            .name = ident,
-        };
+        return .{ .ty = ty, .name = ident, .line = typeToken.line, .column = typeToken.column };
     }
     fn parseLiteral(self: *Self) ParserErrors!*Expr {
         const token = self.advance();
         switch (token.payload) {
             .number => |value| {
-                return try ast.makeLiteral(self.allocator, .{
-                    .number = value,
-                });
+                return try ast.makeLiteral(self.allocator, .{ .number = value }, token.line, token.column);
             },
             .string => |value| {
                 return try ast.makeLiteral(self.allocator, .{
                     .string = value,
-                });
+                }, token.line, token.column);
             },
             .true_ => {
                 return try ast.makeLiteral(self.allocator, .{
                     .boolean = true,
-                });
+                }, token.line, token.column);
             },
             .false_ => {
                 return try ast.makeLiteral(self.allocator, .{
                     .boolean = false,
-                });
+                }, token.line, token.column);
             },
             else => return error.UnexpectedLiteral,
         }
@@ -255,6 +252,8 @@ pub const Parser = struct {
             array_size,
             name,
             vinit,
+            typeToken.line,
+            typeToken.column,
         );
     }
     fn parseExpression(self: *Self) ParserErrors!*Expr {
@@ -265,7 +264,7 @@ pub const Parser = struct {
         while (getTag(self.peek()) == .equality or getTag(self.peek()) == .inequality) {
             const operator = self.advance();
             const right = try self.parseComparison();
-            left = try ast.makeBinary(self.allocator, getTag(operator), left, right);
+            left = try ast.makeBinary(self.allocator, getTag(operator), left, right, operator.line, operator.column);
         }
         return left;
     }
@@ -275,7 +274,7 @@ pub const Parser = struct {
         while (getTag(self.peek()) == .lessthan or getTag(self.peek()) == .lessthan_equal or getTag(self.peek()) == .greaterthan or getTag(self.peek()) == .greaterthan_equal) {
             const operator = self.advance();
             const right = try self.parseTerm();
-            left = try ast.makeBinary(self.allocator, getTag(operator), left, right);
+            left = try ast.makeBinary(self.allocator, getTag(operator), left, right, operator.line, operator.column); //chk line column pa//rameters
         }
 
         return left;
@@ -286,7 +285,7 @@ pub const Parser = struct {
         while (getTag(self.peek()) == .plus or getTag(self.peek()) == .minus) {
             const operator = self.advance();
             const right = try self.parseFactor();
-            left = try ast.makeBinary(self.allocator, getTag(operator), left, right);
+            left = try ast.makeBinary(self.allocator, getTag(operator), left, right, operator.line, operator.column);
         }
         return left;
     }
@@ -295,7 +294,7 @@ pub const Parser = struct {
         while (getTag(self.peek()) == .star or getTag(self.peek()) == .slash or getTag(self.peek()) == .mod) {
             const operator = self.advance();
             const right = try self.parseUnary();
-            left = try ast.makeBinary(self.allocator, getTag(operator), left, right);
+            left = try ast.makeBinary(self.allocator, getTag(operator), left, right, operator.line, operator.column); //chk parameters
         }
         return left;
     }
@@ -306,7 +305,7 @@ pub const Parser = struct {
         _ = try self.consume(.lbracket);
         const subscript = try self.parseExpression();
         _ = try self.consume(.rbracket);
-        return ast.makeIndex(self.allocator, array, subscript);
+        return ast.makeIndex(self.allocator, array, subscript, nameToken.line, nameToken.column);
     }
     fn parsePrimary(self: *Self) ParserErrors!*Expr {
         var token = self.peek();
@@ -323,7 +322,7 @@ pub const Parser = struct {
                 }
 
                 token = self.advance();
-                return try ast.makeVariable(self.allocator, token.payload.identifier);
+                return try ast.makeVariable(self.allocator, token.payload.identifier, token.line, token.column);
             },
             .lparen => {
                 _ = self.advance();
@@ -345,6 +344,8 @@ pub const Parser = struct {
                 self.allocator,
                 getTag(op),
                 operand,
+                op.line,
+                op.column,
             );
         }
         return self.parsePrimary();
@@ -365,7 +366,7 @@ pub const Parser = struct {
         }
         const value = try self.parseExpression();
         _ = try self.consume(.semicolon);
-        return ast.makeAssignment(self.allocator, name, index, op, value);
+        return ast.makeAssignment(self.allocator, name, index, op, value, nameToken.line, nameToken.column);
     }
 
     fn parseCallStatement(self: *Self) ParserErrors!*Stmt {
@@ -374,7 +375,8 @@ pub const Parser = struct {
         return ast.makeExprStmt(self.allocator, call_exp);
     }
     fn parseIfStatement(self: *Self) ParserErrors!*Stmt {
-        _ = try self.consume(.if_);
+        const ifToken = try self.consume(.if_);
+        // _ = try self.consume(.if_);//patch not required
         _ = try self.consume(.lparen);
         const condition = try self.parseExpression();
         _ = try self.consume(.rparen);
@@ -386,21 +388,25 @@ pub const Parser = struct {
             _ = try self.consume(.else_);
             else_branch = try self.parseBlock();
         }
-        return ast.makeIfStmt(self.allocator, condition, if_branch, else_branch);
+        return ast.makeIfStmt(self.allocator, condition, if_branch, else_branch, ifToken.line, ifToken.column);
     }
     fn parseWhileStatement(self: *Self) ParserErrors!*Stmt {
-        _ = try self.consume(.while_);
+        const whileTok = try self.consume(.while_);
+
         _ = try self.consume(.lparen);
         const condition = try self.parseExpression();
         _ = try self.consume(.rparen);
         const content = try self.parseBlock();
-        return ast.makeWhileStmt(self.allocator, condition, content);
+        return ast.makeWhileStmt(self.allocator, condition, content, whileTok.line, whileTok.column);
     }
     fn parseReturnStatement(self: *Self) ParserErrors!*Stmt {
-        _ = try self.consume(.return_);
-        const value = try self.parseExpression();
+        const returnKeyword = try self.consume(.return_);
+        var value: ?*Expr = null;
+        if (getTag(self.peek()) != .semicolon) {
+            value = try self.parseExpression();
+        }
         _ = try self.consume(.semicolon);
-        return ast.makeReturnStmt(self.allocator, value);
+        return ast.makeReturnStmt(self.allocator, value, returnKeyword.line, returnKeyword.column);
     }
 
     fn parseFunctionCall(self: *Self) ParserErrors!*Expr {
@@ -416,7 +422,7 @@ pub const Parser = struct {
             }
         }
         _ = try self.consume(.rparen);
-        return ast.makeCall(self.allocator, callee, try args.toOwnedSlice(self.allocator));
+        return ast.makeCall(self.allocator, callee, try args.toOwnedSlice(self.allocator), nameToken.line, nameToken.column);
     }
 
     pub fn parse(self: *Self) ParserErrors!*Stmt {
