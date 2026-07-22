@@ -26,6 +26,7 @@ pub const Expr = union(enum) {
     },
     literal: Literal,
     unary: UnaryExpr,
+    interpolated_string: []InterpPart,
 };
 
 pub const UnaryExpr = struct {
@@ -36,6 +37,11 @@ pub const UnaryExpr = struct {
 pub const VarInit = union(enum) {
     expr: *Expr,
     array_literal: []*Expr,
+};
+
+pub const InterpPart = union(enum) {
+    text: []const u8,
+    expr: *Expr,
 };
 
 pub const Param = struct {
@@ -168,5 +174,10 @@ pub fn makeProgram(a: std.mem.Allocator, stmts: []*Stmt) !*Stmt {
 pub fn makeUnary(a: std.mem.Allocator, op: TokenTag, operand: *Expr) !*Expr {
     const node = try a.create(Expr);
     node.* = .{ .unary = .{ .op = op, .operand = operand } };
+    return node;
+}
+pub fn makeInterpolatedString(a: std.mem.Allocator, parts: []InterpPart) !*Expr {
+    const node = try a.create(Expr);
+    node.* = .{ .interpolated_string = parts };
     return node;
 }
