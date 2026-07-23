@@ -2,9 +2,13 @@
 
 ### Abhishek's progress 
 * **This week:**
-  * 
+  * init work on the lexer and the parser
+  * helper functions for the parser
+  * worked on the ast declared nodes and HelperFunctions 
 * **Next week :**
-  *  
+  *  Work on refining the parser
+  *  Error handling for the parser ```checker.zig```
+  *  basic ```C code generation``` through the transpiler pipeline 
 ---
 ### Aniketh's progress
 * **This week:**
