@@ -36,6 +36,7 @@ pub fn main(init: std.process.Init) !void {
             }
             //return error.TypeCheckFailed;
             std.process.exit(1);
+            return error.TypeCheckFailed;
         } else {
             std.debug.print("No Errors \n", .{});
         }

@@ -330,6 +330,9 @@ pub const Parser = struct {
                 _ = try self.consume(.rparen);
                 return expression;
             },
+            .string_start => {
+                return self.parseInterpolatedString();
+            },
             else => {
                 return error.ExpectedExpression;
             },
@@ -423,6 +426,35 @@ pub const Parser = struct {
         }
         _ = try self.consume(.rparen);
         return ast.makeCall(self.allocator, callee, try args.toOwnedSlice(self.allocator), nameToken.line, nameToken.column);
+    }
+    fn parseInterpolatedString(self: *Self) ParserErrors!*Expr {
+        const startToken = try self.consume(.string_start);
+        var parts = std.ArrayList(ast.InterpPart).empty;
+        while (true) {
+            switch (getTag(self.peek())) {
+                .string_segment => {
+                    const tok = self.advance();
+                    try parts.append(self.allocator, .{
+                        .text = tok.payload.string_segment,
+                    });
+                },
+                .interpolation_start => {
+                    _ = try self.consume(.interpolation_start);
+                    const expr = try self.parseExpression();
+                    _ = try self.consume(.interpolation_end);
+                    try parts.append(self.allocator, .{
+                        .expr = expr,
+                    });
+                },
+
+                .string_end => {
+                    _ = try self.consume(.string_end);
+                    break;
+                },
+                else => return error.ExpectedExpression,
+            }
+        }
+        return ast.makeInterpolatedString(self.allocator, try parts.toOwnedSlice(self.allocator), startToken.line, startToken.column);
     }
 
     pub fn parse(self: *Self) ParserErrors!*Stmt {

@@ -15,6 +15,10 @@ pub const UnaryExpr = struct {
     line: usize,
     column: usize,
 };
+pub const InterpPart = union(enum) {
+    text: []const u8,
+    expr: *Expr,
+};
 
 pub const Expr = union(enum) {
     variable: struct {
@@ -51,8 +55,15 @@ pub const Expr = union(enum) {
         line: usize,
         column: usize,
     },
+
     unary: UnaryExpr,
+    interpolated_string: struct {
+        parts: []InterpPart,
+        line: usize,
+        column: usize,
+    },
 };
+//>>>>>>> recovered-merge
 
 pub const VarInit = union(enum) {
     expr: *Expr,
@@ -213,5 +224,10 @@ pub fn makeProgram(a: std.mem.Allocator, stmts: []*Stmt) !*Stmt {
 pub fn makeUnary(a: std.mem.Allocator, op: TokenTag, operand: *Expr, line: usize, column: usize) !*Expr {
     const node = try a.create(Expr);
     node.* = .{ .unary = .{ .op = op, .operand = operand, .line = line, .column = column } };
+    return node;
+}
+pub fn makeInterpolatedString(a: std.mem.Allocator, parts: []InterpPart, line: usize, column: usize) !*Expr {
+    const node = try a.create(Expr);
+    node.* = .{ .interpolated_string = .{ .parts = parts, .line = line, .column = column } };
     return node;
 }

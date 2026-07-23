@@ -7,10 +7,6 @@ const Expr = ast.Expr;
 const TypeKind = lexer.TypeKind;
 const TokenTag = lexer.TokenTag;
 
-const test1 = error{
-    TypeCheckFailed,
-} || std.mem.Allocator.Error;
-
 pub const CheckErr = struct {
     message: []const u8,
 };
@@ -26,6 +22,7 @@ const Symbol = struct {
 };
 
 const Scope = std.StringHashMap(Symbol);
+
 pub const Checker = struct {
     allocator: std.mem.Allocator,
     functions: std.StringHashMap(FuncSig),
@@ -43,6 +40,7 @@ pub const Checker = struct {
             .errors = std.ArrayList(CheckErr).empty,
         };
     }
+
     fn addError(self: *Self, line: usize, column: usize, comptime fmt: []const u8, args: anytype) !void {
         const msg = try std.fmt.allocPrint(self.allocator, "{d}:{d}: " ++ fmt, .{ line, column } ++ args);
         try self.errors.append(self.allocator, .{ .message = msg });
@@ -56,6 +54,7 @@ pub const Checker = struct {
         var scope = self.scopes.pop().?;
         scope.deinit();
     }
+
     fn declare(self: *Self, name: []const u8, ty: TypeKind, is_array: bool, line: usize, column: usize) !void {
         var top = &self.scopes.items[self.scopes.items.len - 1];
         if (top.contains(name)) {
@@ -64,6 +63,7 @@ pub const Checker = struct {
         }
         try top.put(name, .{ .ty = ty, .is_array = is_array });
     }
+
     fn lookup(self: *Self, name: []const u8) ?Symbol {
         var i = self.scopes.items.len;
         while (i > 0) {
@@ -72,6 +72,7 @@ pub const Checker = struct {
         }
         return null;
     }
+
     pub fn collectFunctions(self: *Self, top_level: []const *Stmt) !void {
         for (top_level) |stmt| {
             if (stmt.* != .func_decl) continue;
@@ -82,7 +83,7 @@ pub const Checker = struct {
                 continue;
             }
 
-            var param_types = try self.allocator.alloc(TypeKind, f.params.len);
+            const param_types = try self.allocator.alloc(TypeKind, f.params.len);
             for (f.params, 0..) |p, i| param_types[i] = p.ty;
 
             try self.functions.put(f.name, .{
@@ -91,18 +92,20 @@ pub const Checker = struct {
             });
         }
     }
+
     pub fn check(self: *Self, program: *const Stmt) !void {
         std.debug.assert(program.* == .program);
         try self.collectFunctions(program.program);
 
-        try self.pushScope(); // global scope, for future globals if you add them
+        try self.pushScope();
         for (program.program) |stmt| try self.checkStmt(stmt);
         self.popScope();
     }
+
     fn checkStmt(self: *Self, stmt: *const Stmt) !void {
         switch (stmt.*) {
             .var_decl => |v| {
-                if (v.ty == .void_) { // if/when you add Void back into TypeKind
+                if (v.ty == .void_) {
                     try self.addError(v.line, v.column, "variable '{s}' cannot have type void", .{v.name});
                 }
                 if (v.init) |init_val| {
@@ -225,6 +228,7 @@ pub const Checker = struct {
                     }
                 }
             },
+
             .block => |stmts| {
                 try self.pushScope();
                 for (stmts) |s| try self.checkStmt(s);
@@ -235,9 +239,10 @@ pub const Checker = struct {
                 _ = try self.checkExpr(ex);
             },
 
-            .program => unreachable, // handled by check()
+            .program => unreachable,
         }
     }
+
     fn checkExpr(self: *Self, expr: *const Expr) !TypeKind {
         return switch (expr.*) {
             .literal => |lit| switch (lit.value) {
@@ -249,10 +254,11 @@ pub const Checker = struct {
             .variable => |v| blk: {
                 const sym = self.lookup(v.name) orelse {
                     try self.addError(v.line, v.column, "undeclared identifier '{s}'", .{v.name});
-                    break :blk .Int; // placeholder so the walk can continue
+                    break :blk .Int;
                 };
                 break :blk sym.ty;
             },
+
             .unary => |u| blk: {
                 const operand_ty = try self.checkExpr(u.operand);
                 break :blk switch (u.op) {
@@ -292,7 +298,6 @@ pub const Checker = struct {
 
             .call => |c| blk: {
                 if (std.mem.eql(u8, c.callee, "print")) {
-                    // builtin: accepts any number of args of any type, returns void
                     for (c.args) |arg| _ = try self.checkExpr(arg);
                     break :blk .void_;
                 }
@@ -323,12 +328,21 @@ pub const Checker = struct {
                         );
                     }
                 }
-                // in case there are extra unchecked args (arity already reported)
                 if (c.args.len > sig.param_types.len) {
                     for (c.args[n..]) |arg| _ = try self.checkExpr(arg);
                 }
 
                 break :blk sig.return_type;
+            },
+
+            .interpolated_string => |is| blk: {
+                for (is.parts) |part| {
+                    switch (part) {
+                        .text => {},
+                        .expr => |ex| _ = try self.checkExpr(ex),
+                    }
+                }
+                break :blk .String;
             },
         };
     }
@@ -360,14 +374,3 @@ pub const Checker = struct {
         };
     }
 };
-
-fn exprPos(expr: *const Expr) struct { line: usize, column: usize } {
-    return switch (expr.*) {
-        .variable => |v| .{ .line = v.line, .column = v.column },
-        .binary => |b| .{ .line = b.line, .column = b.column },
-        .call => |c| .{ .line = c.line, .column = c.column },
-        .index => |i| .{ .line = i.line, .column = i.column },
-        .literal => |l| .{ .line = l.line, .column = l.column },
-        .unary => |u| .{ .line = u.line, .column = u.column },
-    };
-}

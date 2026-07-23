@@ -221,6 +221,30 @@ pub const Printer = struct {
                 try self.printExpression(unary.operand);
                 self.removeLevel();
             },
+            .interpolated_string => |is| {
+                try self.printIndent();
+                try self.printPrefix();
+                std.debug.print("InterpolatedString\n", .{});
+                self.addLevel();
+                for (is.parts) |part| {
+                    switch (part) {
+                        .text => |t| {
+                            try self.printIndent();
+                            try self.printPrefix();
+                            std.debug.print("Text \"{s}\"\n", .{t});
+                        },
+                        .expr => |expr1| {
+                            //try self.printIndent();
+                            //try self.printPrefix();
+                            //std.debug.print("Interpolation\n", .{});
+                            //self.addLevel();
+                            try self.printExpression(expr1);
+                            self.removeLevel();
+                        },
+                    }
+                }
+                self.removeLevel();
+            },
         }
     }
     fn printParameters(self: *Printer, params: []const ast.Param) !void {

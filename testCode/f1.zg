@@ -1,11 +1,21 @@
+<<<<<<< HEAD
 fn void main() {
     int sum = 105;
+=======
+fn int main() {
+    int x = 5;
+    int y = 10;
+    int sum = 0;
+
+    sum = x + y * 10;
+>>>>>>> recovered-merge
 
     if (sum > 10) {
         int result = sum * 2;
     } else {
         int result = sum;
     }
+<<<<<<< HEAD
 
     print("Result is {reult}"); 
     //return 1 ;
@@ -13,3 +23,8 @@ fn void main() {
 //fn <type not specified> ==> this falls back :(
 //void functions returning smth ==> fall back pls
 
+=======
+    print("The Sum is {sum}");
+    return sum;
+}
+>>>>>>> recovered-merge
