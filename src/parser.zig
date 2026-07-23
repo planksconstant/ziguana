@@ -71,8 +71,16 @@ pub const Parser = struct {
         }
     }
     fn consume(self: *Self, expected: TokenTag) !Token {
-        if (getTag(self.peek()) != expected)
+        const tok = self.peek();
+        if (getTag(tok) != expected) {
+            const msg = try std.fmt.allocPrint(
+                self.allocator,
+                "{d}:{d}: expected {s}, found {s}",
+                .{ tok.line, tok.column, @tagName(expected), @tagName(getTag(tok)) },
+            );
+            try self.errors.append(self.allocator, .{ .message = msg, .token = tok });
             return error.ExpectedToken;
+        }
 
         return self.advance();
     }
