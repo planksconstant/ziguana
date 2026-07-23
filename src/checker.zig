@@ -196,37 +196,35 @@ pub const Checker = struct {
             },
 
             .return_stmt => |ret| {
-                const expected = self.current_return_type.?;
+                const expected = self.current_return_type orelse .void_;
                 if (ret.value) |ex| {
                     const rty = try self.checkExpr(ex);
-                    if (rty != expected) {
-                        //const pos = exprPos(ex);
+                    if (expected == .void_) {
+                        try self.addError(
+                            ret.line,
+                            ret.column,
+                            "cannot return a value from a function returning void",
+                            .{},
+                        );
+                    } else if (rty != expected) {
                         try self.addError(
                             ret.line,
                             ret.column,
                             "return type {s} does not match function's declared return type {s}",
                             .{ @tagName(rty), @tagName(expected) },
                         );
-                    } else if (expected != .void_) {
+                    }
+                } else {
+                    if (expected != .void_) {
                         try self.addError(
                             ret.line,
                             ret.column,
-                            "expected return value of type {s}, found void return",
+                            "non-void function must return a value of type {s}",
                             .{@tagName(expected)},
                         );
-                    } else {
-                        if (expected != .void_) {
-                            try self.addError(
-                                ret.line,
-                                ret.column,
-                                "expected return value of type {s}, found void return",
-                                .{@tagName(expected)},
-                            );
-                        }
                     }
                 }
             },
-
             .block => |stmts| {
                 try self.pushScope();
                 for (stmts) |s| try self.checkStmt(s);

@@ -1,0 +1,9 @@
+fn int add(int x,int y){
+  int s=x+y;
+  return x+y;
+}
+
+fn void main(){
+  int a=add(3,4);
+  print("s is {a}");
+}
