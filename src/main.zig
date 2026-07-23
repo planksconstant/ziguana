@@ -22,16 +22,11 @@ pub fn main(init: std.process.Init) !void {
         }
     }
     var p = parser.Parser.init(arena, tokens.items);
-    const program = p.parse() catch |err| {
-        if (p.errors.items.len > 0) {
-            for (p.errors.items) |e| {
-                std.debug.print("error: {s}\n", .{e.message});
-            }
-        } else {
-            std.debug.print("error: parsing failed ({s})\n", .{@errorName(err)});
-        }
-        std.process.exit(1);
-    };
+    const program = try p.parse();
+    if (args.ast_print) {
+        var printer = astprinter.Printer.init();
+        try printer.printAst(program);
+    }
 
     var checker = @import("checker.zig").Checker.init(arena);
     try checker.check(program);

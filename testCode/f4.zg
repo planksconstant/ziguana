@@ -1,0 +1,13 @@
+fn string foo(string x,int n){
+  int i=0;
+  while(i<n){
+    print("Word is {x} \n");
+  }
+  return n;
+}
+
+fn int main(){
+  string a="arch";
+  int n=6;
+  string b=foo(a,n);
+}
