@@ -1,0 +1,5 @@
+fn int main(){
+  int [3] arr = {67,68,69};
+  int x=arr[-1];
+  return 2;
+}

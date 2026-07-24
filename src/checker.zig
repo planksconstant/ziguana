@@ -152,6 +152,11 @@ pub const Checker = struct {
                     if (sub_ty != .Int) {
                         try self.addError(a.line, a.column, "array subscript for '{s}' must be int, got {s}", .{ a.name, @tagName(sub_ty) });
                     }
+                    if (evalConstInt(idx)) |val| {
+                        if (val < 0) {
+                            try self.addError(a.line, a.column, "array index for '{s}' cannot be negative, got {d}", .{ a.name, val });
+                        }
+                    }
                 }
                 const vty = try self.checkExpr(a.value);
                 if (vty != sym.ty) {
@@ -287,6 +292,11 @@ pub const Checker = struct {
                 if (sub_ty != .Int) {
                     try self.addError(idx.line, idx.column, "array subscript for '{s}' must be int", .{idx.array});
                 }
+                if (evalConstInt(idx.subscript)) |val| {
+                    if (val < 0) {
+                        try self.addError(idx.line, idx.column, "array index for '{s}' cannot be negative, got {d}", .{ idx.array, val });
+                    }
+                }
                 break :blk sym.ty;
             },
 
@@ -374,3 +384,21 @@ pub const Checker = struct {
         };
     }
 };
+
+fn evalConstInt(expr: *const Expr) ?i64 {
+    return switch (expr.*) {
+        .literal => |lit| switch (lit.value) {
+            .number => |n| n,
+            else => null,
+        },
+        .unary => |u| blk: {
+            const inner = evalConstInt(u.operand) orelse break :blk null;
+            break :blk switch (u.op) {
+                .minus => -inner,
+                .plus => inner,
+                else => null,
+            };
+        },
+        else => null,
+    };
+}

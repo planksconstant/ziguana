@@ -231,22 +231,18 @@ pub const Parser = struct {
         const typeToken = try self.consume(.type_);
         const ty = typeToken.payload.type_;
 
-        const identToken = try self.consume(.identifier);
-        const name = identToken.payload.identifier;
-
         var array_size: ?usize = null;
-
         if (getTag(self.peek()) == .lbracket) {
             _ = try self.consume(.lbracket);
-
             const sizeToken = try self.consume(.number);
             array_size = @intCast(sizeToken.payload.number);
-
             _ = try self.consume(.rbracket);
         }
 
-        var vinit: ?ast.VarInit = null;
+        const identToken = try self.consume(.identifier);
+        const name = identToken.payload.identifier;
 
+        var vinit: ?ast.VarInit = null;
         if (getTag(self.peek()) == .equal) {
             _ = try self.consume(.equal);
             vinit = try self.parseVarInit();
@@ -254,15 +250,7 @@ pub const Parser = struct {
 
         _ = try self.consume(.semicolon);
 
-        return try ast.makeVarDecl(
-            self.allocator,
-            ty,
-            array_size,
-            name,
-            vinit,
-            typeToken.line,
-            typeToken.column,
-        );
+        return try ast.makeVarDecl(self.allocator, ty, array_size, name, vinit, typeToken.line, typeToken.column);
     }
     fn parseExpression(self: *Self) ParserErrors!*Expr {
         return self.parseEquality();
