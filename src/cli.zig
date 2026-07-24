@@ -11,6 +11,27 @@ const Arguments = struct {
     print_checks: bool = false,
 };
 pub fn parseArgs(init: std.process.Init) !Arguments {
+    const banner =
+        \\_________ ___
+        \\\$$$$$$$$\\$$\                                                
+        \\ \____$$  |\__|                                                
+        \\     $$  / $$\ $$$$$$\  $$\   $$\ $$$$$$\  $$$$$$$\   $$$$$$\  
+        \\    $$  /  $$ |$$  __$$\ $$ |  $$ | \____$$\ $$  __$$\ \____$$\ 
+        \\   $$  /   $$ |$$ /  $$ |$$ |  $$ | $$$$$$$ |$$ |  $$ | $$$$$$$ |
+        \\  $$  /    $$ |$$ |  $$ |$$ |  $$ |$$  __$$ |$$ |  $$ |$$  __$$ |
+        \\ $$$$$$$$\ $$ |\$$$$$$$ |\$$$$$$  |\$$$$$$$ |$$ |  $$ |\$$$$$$$ |
+        \\ \________|\__| \____$$ | \______/  \_______|\__|  \__| \_______|
+        \\               $$\   $$ |                                      
+        \\               \$$$$$$  |                                      
+        \\                \______/                                       
+        \\
+        \\ Ziguana
+        \\ 1) --version  : Shows ziguana Version
+        \\ 2) --help     : Shows the available flags
+        \\ 1) --tokens   : Prints lexed tokens from the source file
+        \\ 2) --astprint : Print abstract syntax tree parsed from source file 
+        \\ 3) --check    : Prints Syntax errors from the source file
+    ;
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     var arguments = Arguments{};
     if (args.len < 2) {
@@ -19,7 +40,7 @@ pub fn parseArgs(init: std.process.Init) !Arguments {
     var pathSet = false;
     for (args[1..]) |arg| {
         if (std.mem.eql(u8, arg, "--help")) {
-            print("Ziguana\n1) --astprint : Print abstract syntax tree parsed from source file\n2) --tokens : Prints lexed tokens from the source file\n3) --version : Shows ziguana version\n", .{});
+            print("{s}\n", .{banner});
             arguments.ask_help = true;
         } else if (std.mem.eql(u8, arg, "--astprint")) {
             arguments.ast_print = true;
