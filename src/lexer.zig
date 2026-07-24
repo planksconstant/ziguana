@@ -6,14 +6,11 @@ pub const TypeKind = enum {
     Bool, //B is in Upper-case
     String,
     void_, //fix later
-    //<<<<<<< HEAD
-    //=======
 };
 
 pub const lexerMode = enum { //String interpolation using state mode
     normal_state,
     string_state,
-    //>>>>>>> recovered-merge
 };
 
 pub const TokenTag = enum {
@@ -103,21 +100,13 @@ pub const TokenPayload = union(TokenTag) {
     semicolon: void,
     true_: void,
     false_: void,
-    //<<<<<<< HEAD
     invalid: []const u8,
-    //=======
-    //<<<<<<< HEAD
     void_: void,
-    //invalid: []const u8,
     string_start: void,
     string_end: void,
     interpolation_start: void,
     interpolation_end: void,
     string_segment: []const u8,
-    //=======
-    //invalid: []const u8,
-    //>>>>>>> 6a14ed7 (chore(parser) :add error handling)
-    //>>>>>>> recovered-merge
 };
 
 pub const Token = struct {
