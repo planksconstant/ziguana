@@ -1,6 +1,6 @@
 const std = @import("std");
-const TokenTag = @import("lexer.zig").TokenTag;
-const TypeKind = @import("lexer.zig").TypeKind;
+const TokenTag = @import("lexer").TokenTag;
+const TypeKind = @import("lexer").TypeKind;
 
 pub const Literal = union(enum) {
     number: i64,

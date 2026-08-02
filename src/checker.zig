@@ -1,6 +1,6 @@
 const std = @import("std");
-const ast = @import("ast.zig");
-const lexer = @import("lexer.zig");
+const ast = @import("ast");
+const lexer = @import("lexer");
 
 const Stmt = ast.Stmt;
 const Expr = ast.Expr;

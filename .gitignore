@@ -11,3 +11,4 @@ src/hi.txt
 zig-out
 build.zig.zon
 exampleprog
+.vscode/
