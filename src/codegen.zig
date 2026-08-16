@@ -271,7 +271,8 @@ pub const CodeGen = struct {
             .program => |stmts| {
                 try self.write("#include <stdio.h>\n");
                 try self.write("#include <stdint.h>\n");
-                try self.write("#include <inttypes.h>\n\n");
+                try self.write("#include <inttypes.h>\n");
+                try self.write("#include <stdbool.h>\n\n");
                 for (stmts) |stm| {
                     try self.genStmt(stm);
                 }
@@ -284,6 +285,7 @@ pub const CodeGen = struct {
             .Bool => "bool",
             .String => "const char*",
             .void_ => "void",
+            .Auto => unreachable,
         };
     }
     fn mapOp(op: TokenTag) []const u8 {
@@ -335,6 +337,7 @@ pub const CodeGen = struct {
             .String => "%s",
             .Bool => "%s",
             .void_ => "%s",
+            .Auto => unreachable,
         };
     }
 

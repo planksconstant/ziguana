@@ -678,6 +678,7 @@ test "CodeGen: Program headers" {
         \\#include <stdio.h>
         \\#include <stdint.h>
         \\#include <inttypes.h>
+        \\#include <stdbool.h>
         \\
         \\return 0;
         \\

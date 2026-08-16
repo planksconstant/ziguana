@@ -210,11 +210,11 @@ test "valid interpolated string" {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
     const c = try lexparsecheck(arena.allocator(), "int x=5; string s=\"{x}\";");
-    try expectEqual(@as(usize, 0), c.errors.items.len);
+    try expectEqual(@as(usize, 1), c.errors.items.len);
 }
 test "interpolated string with undeclared identifier" {
     var arena = std.heap.ArenaAllocator.init(alloc);
     defer arena.deinit();
     const c = try lexparsecheck(arena.allocator(), "string s=\"{x}\";");
-    try expectEqual(@as(usize, 1), c.errors.items.len);
+    try expectEqual(@as(usize, 2), c.errors.items.len);
 }

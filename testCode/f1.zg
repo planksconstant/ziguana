@@ -1,21 +1,4 @@
-<<<<<<< HEAD
 fn int main(){
   print("Hello World");
   return 1;
-=======
-fn int main() {
-    int x = 5;
-    int y = 10;
-    int sum = 0;
-
-    sum = x + y * 10;
-
-    if (sum > 10) {
-        int result = sum * 2;
-    } else {
-        int result = sum;
-    }
-    print("The Sum is {sum}");
-    return sum;
->>>>>>> 6a14ed7 (chore(parser) :add error handling)
 }
